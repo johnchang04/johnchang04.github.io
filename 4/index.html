@@ -49,6 +49,10 @@
       max-width: 700px;
       border-radius: 8px;
     }
+    .row.massive img {
+      max-width: 1000px;
+      border-radius: 8px;
+    }
     .gif {
       width: 600px;
       height: auto;
@@ -260,6 +264,82 @@
     </div>
     </div>
 
+    <h1 class="section-title">2.1: Harris Corner Detection</h1>
+    <div>
+      For part 2, the goal is to select corresponding points automatically. 
+      The first step is to use Harris corner detection, applying an advanced filter to detect corner-like points in the image.
+      Next, we use ANMS filtering to select points that have the largest radius for which they are the strongest Harris values (most likely to be corners).
+      As a result, ANMS filtering results in interest points that are more spread out from each other.
+      Below are the top 2000 points from Harris corner detection for each of our three mosaic images, with regular top-2k Harris values on the left and top-2k ANMS-filtered on the right.
+    </div>
+    <div class="section">
+      <div class="row large">
+        <img src="images/im1points.png">
+        <img src="images/im1anmspoints.png">
+      </div>
+    </div>
+
+    <div class="section">
+      <div class="row large">
+        <img src="images/im2points.png">
+        <img src="images/im2anmspoints.png">
+      </div>
+    </div>
+
+    <div class="section">
+      <div class="row large">
+        <img src="images/im3points.png">
+        <img src="images/im3anmspoints.png">
+      </div>
+    </div>
+
+        <div>
+      We can see particularly in this image that without ANMS filtering, most of our top interest points would be located in the tree, which results in inaccurate and also irrelevant interest points for our purposes.
+    </div>
+
+    <h1 class="section-title">2.2: Feature Descriptor Extraction</h1>
+    <div>
+      Once we have a set of interest points, we extract features from the surrounding areas of the points.
+      In particular, we examine a 40x40 box around each point, blur it to mitigate loss of information when downsampling, and downsample into a 5x5 image.
+      Below we show a set of 20 feature descriptors, with the original 40x40 boxes on top, the blurred 40x40 boxes in the middle, and the final feature descriptors on the bottom.
+    </div>
+    <div class="section">
+      <div class="row massive">
+        <img src="images/descriptors.png">
+      </div>
+    </div>
+
+    <h1 class="section-title">2.3: Feature Descriptor Matching</h1>
+<div>
+  Next, given a pair of images with feature descriptors extracted from each image, we attempt to match feature descriptors together.
+  We calculate the Euclidean distance from each feature descriptor in image A to each feature descriptor in image B.
+  Additionally, we weed out pairs that have high 1-NN / 2-NN ratios. 
+  What this means is that if feature descriptor A's distance to its nearest neighbor in image B is relatively close to its distance to its second nearest neighbor, then realistically it could map to either of the neighbors (or neither).
+  We only pick pairs for which we have high conviction that there is a match, i.e. the 1-NN distance is much less than the 2-NN distance, and filter out the rest.
+</div>
+    <div class="section">
+      <div class="row large">
+        <img src="images/matches.png">
+      </div>
+    </div>
+
+    <h1 class="section-title">RANSAC for Robust Homography</h1>
+    <div>
+      Finally, we employ the RANSAC algorithm to iterate through many different possible homographies, picking out the best one.
+      RANSAC works by selecting 4 random points from our interest points, computing a homography matrix H, and seeing how many points p' in image B have an acceptably small distance from H*p.
+      These points are called our inliers. We judge each H based on how large its inlier set is, and return the best H and its corresponding inliers.
+      Then, we use the same algorithms as in part 1 to produce mosaics using the best H, with the inliers as our pairs of correspondences.
+    </div>
+
+     <div class="section">
+      <div class="row huge">
+        <img src="images/merged1.png">
+      </div>
+      <div class="row large">
+        <img src="images/merged2.png">
+        <img src="images/merged3.png">
+      </div>
+    </div>
 
     </div>
   </div>
