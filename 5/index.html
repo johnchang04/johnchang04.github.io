@@ -1,0 +1,306 @@
+<!doctype html>
+<html lang="en" rel="preload">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Project 0</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap" rel="stylesheet">
+  <style>
+    body {
+      margin: 0;
+      padding: 2rem;
+      font-family: 'Inter', sans-serif;
+      background: #fafafa;
+      color: #111;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 2.5rem;
+    }
+    h1.section-title {
+      font-size: 1.8rem;
+      font-weight: 600;
+      margin-bottom: 1rem;
+      text-align: center;
+    }
+    .row {
+      display: flex;
+      justify-content: center;
+      flex-wrap: wrap;
+      width: 100%;
+      max-width: 1500px;
+    }
+    .row.small {
+      gap: 2.5rem;
+    }
+    .row.large {
+      gap: 1rem;
+    }
+    .row.small img {
+      max-width: 240px;
+      width: 100%;
+      border-radius: 8px;
+    }
+    .row.large img {
+      max-width: 500px;
+      border-radius: 8px;
+    }
+    .row.huge img {
+      max-width: 700px;
+      border-radius: 8px;
+    }
+    .row.massive img {
+      max-width: 1000px;
+      border-radius: 8px;
+    }
+    .gif {
+      width: 600px;
+      height: auto;
+      border-radius: 12px;
+    }
+    .section {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 1rem;
+    }
+    figure {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      margin: 0;
+    }
+    figcaption {
+      font-size: 0.9rem;
+      color: #555;
+      margin-top: 0.5rem;
+      text-align: center;
+      font-style: italic;
+    }
+  </style>
+</head>
+<body>
+  <h1>Project 4: NERF (Neural Radiance Fields)</h1>
+        <figure>
+        <img src="images/bulldozer.gif" width=200px>
+      </figure>
+    <div class="section">
+    <h1 class="section-title">Part 0 - Camera Calibration and 3D Scanning</h1>
+    <div>
+      Before training the model, I calibrated my phone camera's intrinsics and distortion coefficients by capturing images of a printed sheet of ArUco tags with known dimensions.
+      I then captured my dataset of images of an object (a Labubu), also including ArUco tags in the images as coordinates for locating the object in 3D space.
+      I processed these images, using the ArUco tags as object points in 3D space and mapping them to their corresponding 2d pixel coordinates in each image.
+    </div>
+    <div>
+      Using the object points, image points, intrinsics matrix and distortion coefficients, I calculated the camera pose using cv2.solvePnP (Which solves the Perspective-N-Points problem).
+      Finally, I created a visualization that shows the locations and orientations (derived by c2ws matrices returned by solvePnP) for each picture in my dataset.
+    </div>
+    <div class="row large">
+      <figure>
+        <img src="images/frustums1.png" width=400px>
+      </figure>
+      <figure>
+        <img src="images/frustums2.png" width=400px>
+      <figcaption>camera frustums</figcaption>
+      </figure>
+    </div>
+    </div>
+    <div class="section">
+      <h1 class="section-title">Part 1 - Fit a Neural Field to a 2D Image</h1>
+      <div>
+        Before fitting a neural radiance field to a 3D image, I first tried fitting a neural field to a 2D image -- i.e. given (u, v) coords for a pixel on the image, what are the (r, g, b) colors there?
+        I encoded my coordinate inputs with positional encoding, experimenting with frequencies L=5 and L=20. I also experimented with hidden-layer dimensions to be 100x100 vs. 256x256.
+        Overall, the best outcomes came from 256x256 with frequency=10 positional encoding, and I ran this model on two images.
+      </div>
+
+      <div>I followed this model architecture, tweaking the width of the hidden layers for some experiments (from 256 to 100):</div>
+      <div>
+        <figure>
+        <img src="images/2darch.jpg" width=400px>
+        </figure>
+      </div>
+      <div>Here is a visualization of the progression for my final model over 2000 training steps.</div>
+      <div class="row small">
+      <figure>
+        <img src="images/fox_0.png" width=400px>
+        <figcaption>steps = 0</figcaption>
+      </figure>
+      <figure>
+        <img src="images/fox_50.png" width=400px>
+        <figcaption>steps = 50</figcaption>
+      </figure>
+            <figure>
+        <img src="images/fox_200.png" width=400px>
+        <figcaption>steps = 200</figcaption>
+      </figure>
+            <figure>
+        <img src="images/fox_2000.png" width=400px>
+        <figcaption>steps = 2000</figcaption>
+      </figure>
+      </div>
+      <div>And the PSNR graph for this model's training.</div>
+      <div>
+        <figure>
+        <img src="images/psnr_fox.png" width=400px>
+        </figure>
+      </div>
+      <div>Here are the final results for other versions of the model:</div>
+      <div class="row small">
+      <figure>
+        <img src="images/fox_2000_5L_100DIM.png" width=300px>
+        <figcaption>hidden layer width = 100; frequency = 5</figcaption>
+      </figure>
+            <figure>
+        <img src="images/fox_2000_5L_256DIM.png" width=300px>
+        <figcaption>width = 256, freq = 5</figcaption>
+      </figure>
+            <figure>
+        <img src="images/fox_2000_20L_100DIM.png" width=300px>
+        <figcaption>width = 100, freq = 20</figcaption>
+      </figure>
+      </div>
+      </div>      
+      <div>And here is a visualization of the final model's training on another image:</div>
+      <div class="row small">
+      <figure>
+        <img src="images/beacon_0.png" width=400px>
+        <figcaption>steps = 0</figcaption>
+      </figure>
+      <figure>
+        <img src="images/beacon_50.png" width=400px>
+        <figcaption>steps = 50</figcaption>
+      </figure>
+            <figure>
+        <img src="images/beacon_200.png" width=400px>
+        <figcaption>steps = 200</figcaption>
+      </figure>
+            <figure>
+        <img src="images/beacon_2000.png" width=400px>
+        <figcaption>steps = 2000</figcaption>
+      </figure>
+      </div>
+    </div>
+    <div class="section">
+      <h1 class="section-title">Part 2 - Fit a Neural Radiance Field from Multi-view Images</h1>
+      <div>
+        In this section, I trained a NERF model, which outputs the expected color and density from a 3D location and viewing orientation.
+        Before training the model on my own dataset, I trained it on a sample dataset of a LEGO bulldozer that is well-processed for the task (takes pictures of the object from uniform distances and angles, with a blank background and no changes in lighting).
+      </div>
+      <div>
+        Given this dataset of 2D images and their corresponding c2w matrices (position and orientation in 3D world), the model samples rays from the images that are derived by calculating the 3D rays corresponding to 2D pixel locations.
+        Then given these rays, the model tries to output the colors and densities at points along the ray. 
+        We generate 3D views by querying the model for the colors corresponding to all rays from a particular view (it can be novel i.e. not from an image in our dataset!), and iterate over a number of views in 360 degrees around the object. 
+      </div>
+      <div>Here are some visualizations of the LEGO datset, which shows how the model samples 3D rays from the 2D images, sampling points along each ray to predict color / density for each individual point.</div>
+      <div class="row medium">
+      <figure>
+        <img src="images/single_img_rays.png" width=500px>
+        <figcaption>sampling only from one image</figcaption>
+      </figure>
+      </div>
+      <div class="row medium">
+      <figure>
+        <img src="images/all_rays.png" width=500px>
+        <figcaption>sampling from all images</figcaption>
+      </figure>
+            <figure>
+        <img src="images/rays_zoomed.png" width=400px>
+        <figcaption>another viewpoint, sampling from all images</figcaption>
+      </figure>
+      </div>
+      <div>Here is a visualization of what the model predicts for one of the validation images at different steps.</div>
+      <div class="row small">
+      <figure>
+        <img src="images/step_0_753dB.png" width=400px>
+        <figcaption>steps = 0, dB = 7.53</figcaption>
+      </figure>
+      <figure>
+        <img src="images/step_100_1474dB.png" width=400px>
+        <figcaption>steps = 100, dB = 14.74</figcaption>
+      </figure>
+            <figure>
+        <img src="images/step_200_1804dB.png" width=400px>
+        <figcaption>steps = 200, dB = 18.04</figcaption>
+      </figure>
+      <figure>
+        <img src="images/step_300_1964dB.png" width=400px>
+        <figcaption>steps = 300, dB = 19.64</figcaption>
+      </figure>
+      <figure>
+        <img src="images/step_900_2338dB.png" width=400px>
+        <figcaption>steps = 900, dB = 23.38</figcaption>
+      </figure>
+      </div>
+
+      <div>Here are the results after 2000 training steps:</div>
+      <div class="row medium">
+      <figure>
+        <img src="images/lego_progress.png" width=400px>
+        <figcaption>PSNR graph</figcaption>
+      </figure>
+      <figure>
+        <img src="images/bulldozer.gif" width=400px>
+      </figure>
+      </div>
+      <div>
+
+      </div>
+    <div class="section">
+      <h1>Part 2.6: Training with Your Own Data</h1>
+    </div>
+    <div>
+      Finally, I trained the model on my own data, which yielded less clean but still noticeable results due to noisy image background, variations in lights / shadows, non-uniform distance from object and distance between angles, etc.
+      I didn't make any code changes to my final model. I tried experimenting with L=12 and L=14 but the results were much grainier and didn't have a realistic texture. I trained the model for 10,000 steps, with 10000 rays sampled per step and 128 points sampled per ray, with a distance range of between 0.02 and 0.8 per ray to sample points, and with the Adam optimizer with learning rate = -5e4.
+    </div>
+    <div>Below is the model architecture:</div>
+    <div class="row medium">
+    <figure>
+      <img src="images/3darch.png"  width="600px">
+    </figure>
+    </div>
+
+    <div>First, I tried my model on the staff's dataset:</div>
+    <div>
+      <img src="images/lafufu.gif">
+      <figcaption>training on staff's dataset</figcaption>
+    </div>
+    <div>Then on my own:</div>
+      <div class="row small">
+      <figure>
+        <img src="images/chin.gif" width=400px>
+      </figure>
+      <figure>
+        <img src="images/shit.gif" width=400px>
+      </figure>
+      <figure>
+        <img src="images/try_again.gif" width=400px>
+      </figure>
+      </div>
+    <div>Below is the PSNR graph and some visualizations for how the model is predicting a validation image at various training steps.</div>
+    <div class="row medium">
+      <figure>
+        <img src="images/labubu_psnr.png" width=400px>
+        <figcaption>PSNR graph</figcaption>
+      </figure>
+    </div>
+      <div class="row small">
+      <figure>
+        <img src="images/labubu_step_0_906dB.png" width=400px>
+        <figcaption>step = 0, PSNR = 9.06 dB</figcaption>
+      </figure>
+      <figure>
+        <img src="images/labubu_step_200_1694dB.png" width=400px>
+        <figcaption>step = 200, PSNR = 16.94 dB</figcaption>
+      </figure>
+      <figure>
+        <img src="images/labubu_step_600_1856dB.png" width=400px>
+        <figcaption>step = 600, PSNR = 18.56 dB</figcaption>
+      </figure>
+      <figure>
+        <img src="images/labubu_step_9900_2325.png" width=400px>
+        <figcaption>step = 9900, PSNR = 23.25 dB</figcaption>
+      </figure>
+      </div>
+    </div>
+</body>
+</html>
