@@ -191,6 +191,21 @@
         Then given these rays, the model tries to output the colors and densities at points along the ray. 
         We generate 3D views by querying the model for the colors corresponding to all rays from a particular view (it can be novel i.e. not from an image in our dataset!), and iterate over a number of views in 360 degrees around the object. 
       </div>
+    <div>
+      To compute ray origins and directions (in 3D space) based on pixel locations, I implemented functions that compute the camera coordinate of a 3D point shown in the camera's 2D coordinates, to transform that point's coordinate from the camera's basis to the world's basis (using c2w matrix), and finally to compute the ray's origin and direction that correspond to a pixel.
+    </div>
+    <div>
+      In terms of the model, I first modified my position encoding from the previous task to account for (x, y, z) 3D coordinates instead of 2D coordinates.
+      I then put together the model following a similar (but deeper) architecture as the previous task, but now also concatenating the positional encoding into later layers so that the model can reference it, and gave it two branches to output both color and density.
+      Then, I wrote a volume rendering equation that renders the overall color a model predicts from a ray, based on the colors and densities the model predicts from each sampled point along said ray.
+      Finally, I trained the model by sampling random rays (and points along rays) from the 2D training set of images, computing the volume rendering from each point, and computing the validation loss by comparing the volume rendering with the actual pixel color value.
+    </div>
+    <div>Below is the model architecture:</div>
+    <div class="row medium">
+    <figure>
+      <img src="images/3darch.png"  width="600px">
+    </figure>
+    </div>
       <div>Here are some visualizations of the LEGO datset, which shows how the model samples 3D rays from the 2D images, sampling points along each ray to predict color / density for each individual point.</div>
       <div class="row medium">
       <figure>
@@ -251,12 +266,6 @@
     <div>
       Finally, I trained the model on my own data, which yielded less clean but still noticeable results due to noisy image background, variations in lights / shadows, non-uniform distance from object and distance between angles, etc.
       I didn't make any code changes to my final model. I tried experimenting with L=12 and L=14 but the results were much grainier and didn't have a realistic texture. I trained the model for 10,000 steps, with 10000 rays sampled per step and 128 points sampled per ray, with a distance range of between 0.02 and 0.8 per ray to sample points, and with the Adam optimizer with learning rate = -5e4.
-    </div>
-    <div>Below is the model architecture:</div>
-    <div class="row medium">
-    <figure>
-      <img src="images/3darch.png"  width="600px">
-    </figure>
     </div>
 
     <div>First, I tried my model on the staff's dataset:</div>
