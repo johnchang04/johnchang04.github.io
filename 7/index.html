@@ -134,7 +134,7 @@
         Now, instead of predicting a clean image, the model should predict the velocity describing how to move from x0 to x1 (x0 - x1), given xt and t.
     </div>
     <img src="images/time_cond_unet.png" width=700px>
-    <div>Again, we train our model for 5 epochs, this time with lr=1e-2 and exponential scheduling:</div>
+    <div>Again, we train our model for 10 epochs, this time with lr=1e-2 and exponential scheduling:</div>
     <img src="images/flow_matching_loss.png" width=500px>
     <div>To sample from the model, we use the equation x = v*t from physics to iteratively step from pure noise to the image manifold. We take T small timesteps of size (1/T), starting from a noisy image xt (same noise level as x0 initially). At each timestep, we update our intermediate image xt by adding the distance traveled from one timestep (= v*t), with t being (1/T) and our predicted v being model(xt, t).</div>
     <div>We can see the denoised images evolving when we sample after the first, fifth, and last epochs. Towards the end, the model generates results that look like hand-drawn symbols and are much less noisy than at the beginning, but we can see that the model is still a bit conufused about what digits should look like.</div>
@@ -142,6 +142,26 @@
         <img src="images/flow_matching_1.png">
         <img src="images/flow_matching_4.png">
         <img src="images/flow_matching_9.png">
+    </div>
+    <h1 class="section-title">Part 2.C - Adding Class Conditioning</h1>
+    <div>As we saw from the previous section, the model needs some additional guidance to distinguish between digits, as it's outputting digit-like symbols that don't really match to real numerals.
+        Let's add class conditioning to our time-conditioned flow matching UNet to see if we can alleviate this issue.
+    </div>
+    <div>Again, we train for 10 epochs with lr=1e-2 and exponential scheduling.</div>
+    <img src="images/class_cond_training_loss.png">
+    <div class="row small">
+        <img src="images/class_cond_epoch_1.png">
+        <img src="images/class_cond_epoch_3.png">
+        <img src="images/class_cond_epoch_5.png">
+        <img src="images/class_cond_epoch_10.png">
+    </div>
+    <div>Finally, we can also get rid of the exponential scheduling and use a lower learning rate (2e-4) to get even better results. Note -- sampled with guidance rate 0.3 instead of 0.5 above.</div>
+    <img src="images/tweak_loss.png">
+    <div class="row small">
+        <img src="images/tweak_epoch0.png">
+        <img src="images/tweak_epoch2.png">
+        <img src="images/tweak_epoch5.png">
+        <img src="images/tweak_epoch9.png">
     </div>
 
 </body>
