@@ -1,0 +1,150 @@
+<!doctype html>
+<html lang="en" rel="preload">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Project 0</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap" rel="stylesheet">
+  <style>
+    body {
+      margin: 0;
+      padding: 2rem;
+      font-family: 'Inter', sans-serif;
+      background: #fafafa;
+      color: #111;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 2.5rem;
+    }
+    h1.section-title {
+      font-size: 1.8rem;
+      font-weight: 600;
+      margin-bottom: 1rem;
+      text-align: center;
+    }
+    .row {
+      display: flex;
+      justify-content: center;
+      flex-wrap: wrap;
+      width: 100%;
+      max-width: 1500px;
+    }
+    .row.small {
+      gap: 2.5rem;
+    }
+    .row.large {
+      gap: 1rem;
+    }
+    .row.small img {
+      max-width: 240px;
+      width: 100%;
+      border-radius: 8px;
+    }
+    .row.large img {
+      max-width: 500px;
+      border-radius: 8px;
+    }
+    .row.huge img {
+      max-width: 700px;
+      border-radius: 8px;
+    }
+    .row.massive img {
+      max-width: 1000px;
+      border-radius: 8px;
+    }
+    .gif {
+      width: 600px;
+      height: auto;
+      border-radius: 12px;
+    }
+    .section {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 1rem;
+    }
+    figure {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      margin: 0;
+    }
+    figcaption {
+      font-size: 0.9rem;
+      color: #555;
+      margin-top: 0.5rem;
+      text-align: center;
+      font-style: italic;
+    }
+  </style>
+</head>
+<body>
+    <h1>Project 5 - Fun with Diffusion</h1>
+    <h1 class="section-title">Part 2.A - Classical UNet -- Noise -> MNIST</h1>
+    <div>In this section, we replicate a simple version of the flow-matching model used in Part 1, training a small model to generate handwritten digits from noise. 
+        Our first iteration of the model is a classical UNet that applies convolutions to an input of pure noise and downsamples it, then applies transpose convolutions and upsamples it such that it should generate a handwritten digit.
+    </div>
+    <figure>
+        <img src="images/unet-architecture.png" width=800px>
+    </figure>
+    <div>We train this model by feeding it noised hand-written digits as input x, with the target output y being the denoised original hand-written digit. 
+        We use noise level 0.5, but our hope is that the model can predict from all levels of noise. Here are some examples of noised digits at different levels (noise goes from 0 to 1).
+    </div>
+    <figure>
+        <img src="images/noise_levels.png" width=600px>
+    </figure>
+    <div>We train our model for 5 epochs using AdamW optimizer with 1e-4 learning rate and it achieves this training loss curve:</div>
+    <figure>
+        <img src="images/classical_unet_loss.png" width=600px>
+    </figure>
+    <div>After one epoch of training, we already see pretty decent denoising when we feed it noised digits at noise = 0.5.</div>
+    <figure>
+        <img src="images/denoising_after_1_epoch.png" width=600px>
+    </figure>
+    <div>And after 5 epochs the performance is quite good, both for training and test images.</div>
+    <figure>
+        <img src="images/denoising_after_5_epochs.png" width=600px>
+    </figure>
+    <figure>
+        <img src="images/test_set_denoising.png" width=600px>
+    </figure>
+    <div>Interestingly, while performance decreases when we try to use this model on noised images with noise > 0.5, performance stays around the same for lower noise levels.</div>
+    <figure>
+        <img src="images/test_set_denoising_different_levels.png" width=500px>
+    </figure>
+    <div>Recall that our goal is to diffuse MNIST-like images from pure noise. As an experiment, let's try to train the model using pure noise as input and hand-written digits as labels. Note that the pure noise does not actually correspond to the digit. We will use MSE to train this model.</div>
+    <figure>
+        <img src="images/training_loss_pure_noise.png" width=500px>
+    </figure>
+    <div>After one epoch, we already see the model starting to converge to some single point. Below are 16 samples generated from feeding the model pure noise.</div>
+    <figure>
+        <img src="images/pure_noise_1_epoch.png" width=500px>
+    </figure>
+    <div>And after 5 epochs we see that the model has almost fully converged to always give the same answer. Why does this happen? Since we are using MSE loss, the model learns to predict the point that minimizes the sum of squared distances to all training examples (i.e. the optimum for the MSE optimization problem)! Thus, what we are seeing here can be understood as a kind of average of all the digits in the training set.</div>
+    <figure>
+        <img src="images/pure_noise_5_epochs.png" width=500px>
+    </figure>
+    <h1 class="section-title">Part 2.B - Time-Conditioned UNet = Flow-Matching</h1>
+    <div>Recall that diffusion is essentially taking steps from pure noise to the image manifold. We conceptualize this path through time and seek to calculate the "velocity" of the noise as it iteratively denoises into an image on the image manifold, i.e., at a particular time-step, we have an intermediate image xt, and would like to predict the velocity with our U-Net model (feeding it t and xt).</div>
+    <div> Additionally, the velocity can be calculated as follows: xt is derived via a linear interpolation between pure noise (x0) and x1 (clean image from our dataset) with the equation (1-t)*x0 + t*x1 -- i.e. if t=0, we get pure noise, and if t=1, we get a clean image, and everything in (0, 1) are our intermediate steps.
+        Thus the velocity is the derivative of xt with respect to time t, which works out to be x0 - x1. Therefore, we compute the loss on the MSE between (x0 - x1) and our predicted velocity generated by the model given xt and t.
+    </div>
+    <div>We modify our model to take in as additional input time t, processing it through fully connected blocks and multiplying the outputs on the upsampling portion of the model with them.
+        Now, instead of predicting a clean image, the model should predict the velocity describing how to move from x0 to x1 (x0 - x1), given xt and t.
+    </div>
+    <img src="images/time_cond_unet.png" width=700px>
+    <div>Again, we train our model for 5 epochs, this time with lr=1e-2 and exponential scheduling:</div>
+    <img src="images/flow_matching_loss.png" width=500px>
+    <div>To sample from the model, we use the equation x = v*t from physics to iteratively step from pure noise to the image manifold. We take T small timesteps of size (1/T), starting from a noisy image xt (same noise level as x0 initially). At each timestep, we update our intermediate image xt by adding the distance traveled from one timestep (= v*t), with t being (1/T) and our predicted v being model(xt, t).</div>
+    <div>We can see the denoised images evolving when we sample after the first, fifth, and last epochs. Towards the end, the model generates results that look like hand-drawn symbols and are much less noisy than at the beginning, but we can see that the model is still a bit conufused about what digits should look like.</div>
+    <div class="row small">
+        <img src="images/flow_matching_1.png">
+        <img src="images/flow_matching_4.png">
+        <img src="images/flow_matching_9.png">
+    </div>
+
+</body>
+</div>
+    
+</html>
