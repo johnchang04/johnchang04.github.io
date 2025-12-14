@@ -161,7 +161,19 @@
     <img src="images/tree_drawn.png" width="300px">
     <img src="images/tree_it.png" width="1000px">
 
-    <div></div>
+    <div>Additionally, we can try inpainting images -- we want to apply masks to images s.t. new content is generated wherever m = 1.
+        We use the same denoising loop, but after every step, we force xt to have the same pixels as the original image where m=0.
+    </div>
+    <img src="images/camp_mask.png" width="500px">
+    <img src="images/camp_inpainted.png" width="200px">
+    <img src="images/bob_mask.png" width="500px">
+    <img src="images/bob_inpainted.png" width="200px">
+    <img src="images/dino_mask.png" width="500px">
+
+    <div>Finally, we can try text-conditioning a noised image on a prompt for a different image to get these interesting results:</div>
+    <img src="images/confucius_Camp.png" width="600px">
+    <img src="images/samurai_bob.png" width="600px">
+    <img src="images/dog_dino.png" width="600px">
 
     <h1 class="section-title">Part 1.B - Flip Images / Hydrid Images</h1>
 
