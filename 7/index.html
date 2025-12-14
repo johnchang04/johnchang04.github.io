@@ -128,6 +128,42 @@
         <img src="images/gausian_blur.png" width="200px"> 
     </div>   
 
+    <div>In addition to iteratively denoising a noised image, we can also iteratively denoise pure noise using DeepFloyd! 
+        Simply condition the model by asking it to generate a "high quality image" -- we can do this to get some idea of what DeepFloyd thinks the image manifold looks like.</div>
+    <div class="row large">
+        <img src="images/it_denoise1.png" width="150px"> 
+        <img src="images/it_denoise2.png" width="150px"> 
+        <img src="images/it_denoise3.png" width="150px"> 
+        <img src="images/it_denoise4.png" width="150px"> 
+        <img src="images/it_denoise5.png" width="150px"> 
+    </div>   
+
+    <div>Notice that these images look a bit strange. Researchers have discovered that classifier-free guidance achieves better results than simply conditioning the model. How does CFG work? We compute both a conditional noise estimate based on our prompt, and also an unconditional noise estimate (i.e. based on the empty prompt), then compute e = e_u + gamma*(e_c - e_u) for some hyperparameter gamma representing our guidance variable (we use 5.0)</div>
+    <div>Here are some results from iterative denoising using CFG (notice how the generated images look much more like real photos):</div>
+    <div class="row large">
+        <img src="images/cfg_1.png" width="150px"> 
+        <img src="images/cfg_2.png" width="150px"> 
+        <img src="images/cfg_3.png" width="150px"> 
+        <img src="images/cfg_4.png" width="150px"> 
+        <img src="images/cfg_5.png" width="150px"> 
+    </div>    
+
+    <div>We can also condition the model on a general prompt like "a high quality photo" and input a noised image like our Campanile image -- at decreased noise levels, we will see the iteratively denoised result looking gradually more like the original clean image. The numbers below refer to starting index in steps (i), i.e. higher numbers corresponds to more denoised versions of Campanile as inputs.</div>
+    <img src="images/campy.png">
+
+    <div>Similarly for this image of a Labubu we can do the same process:</div>
+    <img src="images/labubu.png" width="150px">
+    <img src="images/labubu_progression.png" width="1000px">
+
+    <div>We can also repeat this process on hand-drawn images:</div>
+    <img src="images/cat_drawn.png" width="300px">
+    <img src="images/cat_it.png" width="1000px">
+    <img src="images/tree_drawn.png" width="300px">
+    <img src="images/tree_it.png" width="1000px">
+
+    <div></div>
+
+    <h1 class="section-title">Part 1.B - Flip Images / Hydrid Images</h1>
 
 
     <h1 class="section-title">Part 2.A - Classical UNet -- Noise -> MNIST</h1>
