@@ -81,6 +81,55 @@
 </head>
 <body>
     <h1>Project 5 - Fun with Diffusion</h1>
+    <h1 class="section-title">Part 1.A - DeepFloyd / Sampling Loops</h1>
+    <div>In this section, we play around with an existing diffusion model called DeepFloyd. We generate embeddings for several prompts for later use (['a high quality picture', 'an oil painting of a snowy mountain village', 'an oil painting of people around a campfire', 'an oil painting of an old man', 'a high quality photo', 'an oil painting of a wolf', 'an oil painting of a sheep', 'an oil painting of a castle', 'an oil painting of the beach', 'an oil painting of a samurai', 'a dinosaur eating a khinkali', 'a dolphin shooting a machine gun', 'confucius playing minecraft', 'an oil painting of the sunset', 'an oil painting of an alpine lake', 'an oil painting of a bustling market', 'an oil painting of a dwarf', '']). 
+        Using seed = 100, here are the results for a few of our prompts using 20 inference steps:
+    </div>
+    <img src="images/deepl.png" width=600px>
+    <div>and two inference steps (notice how fewer inference steps lead to relatively worse generations):</div>
+    <img src="images/oof.png" width=600px>
+    <div>Now then, what is diffusion? Diffusion is the process of generating images from noise, i.e. it is the reverse of progressively adding more noise to an image. Before we explore the backward process (diffusion), let's see what the forward process looks like.</div>
+    <div>To add noise to an image, rather than iteratively adding noice one time-step at a time, we can use alpha coefficients (in this case already chosen by DeepFloyd researchers) which correspond to time steps in the iterative noising process.
+        Then, given a clean image x0, we get a noisy image xt at timestep t by sampling from a Gaussian with mean sqrt(alpha_t), variance (1 - alpha_t) i.e. xt = sqrt(alpha_t)*x0 + (1-alpha_t)*e, where e ~ N(0, 1).
+        Noising the Campanile at timesteps 250, 500, and 750 respectively looks like this:
+    </div>
+    <div class="row large">
+        <img src="images/camp_250.png" width="200px"> 
+        <img src="images/camp_500.png" width="200px"> 
+        <img src="images/camp_750.png" width="200px"> 
+    </div>
+    <div>The classical way to denoise an image is by Gaussian blurring. However, this doesn't work too well if we have too much noise:</div>
+     <div class="row large">
+        <img src="images/denoised_250.png" width="200px"> 
+        <img src="images/denoised_500.png" width="200px"> 
+        <img src="images/denoised_750.png" width="200px"> 
+    </div>   
+
+    <div>Instead, let's use a DeepFloyd stage to denoise the image back to the image manifold. Essentially, the DeepFloyd UNet predicts where the noise is, then we plug the noise into our forward process equation and solve for the clean image. Here are the results for the same noise levels (250, 500, 750).</div>
+    <img src="images/one_ste_denoising.png">
+
+    <div>Instead of using this noise from relatively far apart times, a better approach would be to iteratively remove the noise between smaller timesteps. 
+        In this example, we use step size = 30 and our strided timesteps go from t = 990 (noisy) back to 0 i.e. if i = 10, time = 990 - (i * 30) = 690.
+    </div>
+    <div>Let's try starting from i = 10 (t = 690) and gradually denoising from that time value. For the intermediate visualizations, t = 690, 540, 390, 240 and 90 using the same equation as how we got t = 690 from i = 10.</div>
+     <div class="row large">
+        <img src="images/noisy_input.png" width="150px">
+        <img src="images/it_i10.png" width="150px"> 
+        <img src="images/it_i15.png" width="150px"> 
+        <img src="images/it_i20.png" width="150px"> 
+        <img src="images/it_i25.png" width="150px"> 
+        <img src="images/it_i30.png" width="150px"> 
+    </div>   
+
+    <div>Here is the result compared to one-step denoising and Gaussian blurring, respectively:</div>
+     <div class="row large">
+        <img src="images/it_denoise_res.png" width="200px">
+        <img src="images/one_step_est.png" width="200px"> 
+        <img src="images/gausian_blur.png" width="200px"> 
+    </div>   
+
+
+
     <h1 class="section-title">Part 2.A - Classical UNet -- Noise -> MNIST</h1>
     <div>In this section, we replicate a simple version of the flow-matching model used in Part 1, training a small model to generate handwritten digits from noise. 
         Our first iteration of the model is a classical UNet that applies convolutions to an input of pure noise and downsamples it, then applies transpose convolutions and upsamples it such that it should generate a handwritten digit.
